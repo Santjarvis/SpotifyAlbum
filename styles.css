@@ -1,0 +1,13 @@
+body.light {
+  background-color: #f9fafb;
+  color: #111827;
+}
+
+body.light section {
+  background-color: #e5e7eb;
+}
+
+body.light .album-card {
+  background-color: #ffffff;
+  color: #1f2937;
+}

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spotify Albums Playlist - Advanced</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&family=Montserrat:wght@700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* CSS Variables for Light/Dark Themes */
+    :root {
+      --bg-color: #f0f0f0;
+      --text-color: #222;
+      --primary-color: #1db954;
+      --secondary-color: #17a346;
+      --card-bg: #fff;
+      --shadow-color: rgba(0,0,0,0.1);
+      --header-bg: #fff;
+    }
+    [data-theme="dark"] {
+      --bg-color: #121212;
+      --text-color: #eee;
+      --primary-color: #1db954;
+      --secondary-color: #17a346;
+      --card-bg: #222;
+      --shadow-color: rgba(0,0,0,0.7);
+      --header-bg: #181818;
+    }
+
+    /* Reset & Base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Poppins', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    a {
+      color: var(--primary-color);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    a:hover, a:focus {
+      color: var(--secondary-color);
+      outline: none;
+    }
+
+    /* Header & Navbar */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background-color: var(--header-bg);
+      box-shadow: 0 2px 10px var(--shadow-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      z-index: 1000;
+      user-select: none;
+    }
+    header h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--primary-color);
+      letter-spacing: 2px;
+    }
+    /* Scroll progress bar */
+    #progress-bar {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      height: 4px;
+      background: var(--primary-color);
+      width: 0%;
+      z-index: 1100;
+      transition: width 0.25s ease-out;
+    }
+
+    /* Dark/Light toggle button */
+    .theme-toggle {
+      background: none;
+      border: 2px solid var(--primary-color);
+      border-radius: 30px;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      transition: all 0.3s ease;
+    }
+    .theme-toggle:hover {
+      background-color: var(--primary-color);
+      color: var(--card-bg);
+      border-color: var(--primary-color);
+    }
+
+    /* Main container */
+    main {
+      max-width: 1200px;
+      margin: 100px auto 60px;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(300px,1fr));
+      gap: 2.5rem;
+      scroll-snap-type: y proximity;
+    }
+
+    /* Album cards */
+    .album-container {
+      background: var(--card-bg);
+      border-radius: 18px;
+      box-shadow: 0 8px 25px var(--shadow-color);
+      padding: 1.5rem;
+      text-align: center;
+      transition: transform 0.4s cubic-bezier(.22,.61,.36,1), box-shadow 0.4s ease;
+      scroll-snap-align: start;
+      opacity: 0;
+      transform: translateY(40px);
+      will-change: transform, opacity;
+      perspective: 1000px;
+      cursor: default;
+      user-select: none;
+    }
+    /* Animate in */
+    .album-container.visible {
+      opacity: 1;
+      transform: translateY(0) rotateX(0deg);
+    }
+    /* Hover 3D effect */
+    .album-container:hover {
+      transform: translateY(-10px) rotateX(8deg) scale(1.05);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+      cursor: pointer;
+    }
+
+    /* Album title */
+    .album-container h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+      letter-spacing: 0.05em;
+      user-select: text;
+    }
+
+    /* Spotify iframe */
+    iframe {
+      border-radius: 15px;
+      width: 100%;
+      height: 380px;
+      border: none;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      transition: box-shadow 0.3s ease;
+    }
+    iframe:hover, iframe:focus {
+      box-shadow: 0 15px 45px rgba(29, 185, 84, 0.7);
+      outline: none;
+    }
+
+    /* Fallback link styled as button */
+    .fallback-link {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 12px 24px;
+      background-color: var(--primary-color);
+      color: var(--card-bg);
+      font-weight: 600;
+      border-radius: 50px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      box-shadow: 0 6px 12px rgba(29, 185, 84, 0.35);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      user-select: none;
+    }
+    .fallback-link:hover, .fallback-link:focus {
+      background-color: var(--secondary-color);
+      box-shadow: 0 10px 20px rgba(23, 163, 70, 0.6);
+      outline: none;
+    }
+
+    /* Section descriptions */
+    section.description {
+      grid-column: 1 / -1;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px var(--shadow-color);
+      padding: 2rem;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: var(--text-color);
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.6s ease;
+      scroll-snap-align: start;
+    }
+    section.description.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      font-size: 0.9rem;
+      color: var(--text-color);
+      background: var(--header-bg);
+      border-top: 1px solid var(--shadow-color);
+      user-select: none;
+    }
+
+    /* Responsive typography */
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.25rem;
+      }
+      .album-container h2 {
+        font-size: 1.1rem;
+      }
+      .fallback-link {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <header role="banner" aria-label="Main header with site title and theme toggle">
+    <h1>SPOTIFY ALBUMS</h1>
+    <button aria-label="Toggle Dark/Light Mode" class="theme-toggle" id="theme-toggle" title="Toggle Dark/Light Mode">
+      🌙
+    </button>
+  </header>
+
+  <div id="progress-bar" aria-hidden="true"></div>
+
+  <main role="main" id="main-content">
+    <section class="description" id="intro">
+      <p>Discover some of the most iconic Spotify albums curated just for you. Scroll down and enjoy immersive album previews, with smooth transitions and interactive effects to enhance your listening experience.</p>
+    </section>
+
+    <!-- Album 1 -->
+    <article class="album-container" tabindex="0" aria-labelledby="album1-title">
+      <h2 id="album1-title">Album 1 - Melodic Beats</h2>
+      <iframe
+        src="https://open.spotify.com/embed/album/6Xo2PDEoQKzCndIbks2kvu"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"
+        allowfullscreen
+        title="Spotify album Melodic Beats">
+      </iframe>
+      <a href="https://open.spotify.com/album/6Xo2PDEoQKzCndIbks2kvu" target="_blank" rel="noopener" class="fallback-link">Listen on Spotify</a>
+    </article>
+
+    <!-- Album 2 -->
+    <article class="album-container" tabindex="0" aria-labelledby="album2-title">
+      <h2 id="album2-title">Album 2 - Chill Vibes</h2>
+      <iframe
+        src="https://open.spotify.com/embed/album/3ZKEPJwhLcpUfYPMIsC4PF"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"
+        allowfullscreen
+        title="Spotify album Chill Vibes">
+      </iframe>
+      <a href="https://open.spotify.com/album/3ZKEPJwhLcpUfYPMIsC4PF" target="_blank" rel="noopener" class="fallback-link">Listen on Spotify</a>
+    </article>
+
+    <!-- Album 3 -->
+    <article class="album-container" tabindex="0" aria-labelledby="album3-title">
+      <h2 id="album3-title">Album 3 - Classic Hits</h2>
+      <iframe
+        src="https://open.spotify.com/embed/album/26LsyqIbRQJzO1TPE5icl2"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"
+        allowfullscreen
+        title="Spotify album Classic Hits">
+      </iframe>
+      <a href="https://open.spotify.com/album/26LsyqIbRQJzO1TPE5icl2" target="_blank" rel="noopener" class="fallback-link">Listen on Spotify</a>
+    </article>
+
+    <!-- Album 4 -->
+    <article class="album-container" tabindex="0" aria-labelledby="album4-title">
+      <h2 id="album4-title">Album 4 - Indie Grooves</h2>
+      <iframe
+        src="https://open.spotify.com/embed/album/25Uddgldy3slnChqKqHsIM"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"
+        allowfullscreen
+        title="Spotify album Indie Grooves">
+      </iframe>
+      <a href="https://open.spotify.com/album/25Uddgldy3slnChqKqHsIM" target="_blank" rel="noopener" class="fallback-link">Listen on Spotify</a>
+    </article>
+
+    <!-- Album 5 -->
+    <article class="album-container" tabindex="0" aria-labelledby="album5-title">
+      <h2 id="album5-title">Album 5 - Electro Pulse</h2>
+      <iframe
+        src="https://open.spotify.com/embed/album/0345WPzPBSeISh2IpIQWxT"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"
+        allowfullscreen
+        title="Spotify album Electro Pulse">
+      </iframe>
+      <a href="https://open.spotify.com/album/0345WPzPBSeISh2IpIQWxT" target="_blank" rel="noopener" class="fallback-link">Listen on Spotify</a>
+    </article>
+
+    <section class="description" id="outro">
+      <p>Thank you for exploring these Spotify albums with us! Feel free to toggle between light and dark modes for the best experience day or night.</p>
+    </section>
+  </main>
+
+  <footer role="contentinfo">
+    &copy; 2025 Spotify Albums Showcase. All rights reserved.
+  </footer>
+
+  <script>
+    // Dark/Light mode toggle
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    function setTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        themeToggleBtn.textContent = '☀️';
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        themeToggleBtn.textContent = '🌙';
+      }
+    }
+
+    // Initialize theme from localStorage or system
+    const savedTheme = localStorage.getItem('theme');
+    if(savedTheme) {
+      setTheme(savedTheme);
+    } else {
+      setTheme(prefersDark ? 'dark' : 'light');
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      if(currentTheme === 'dark') {
+        setTheme('light');
+        localStorage.setItem('theme', 'light');
+      } else {
+        setTheme('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+
+    // Scroll progress bar update
+    const progressBar = document.getElementById('progress-bar');
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = (scrollTop / docHeight) * 100;
+      progressBar.style.width = scrollPercent + '%';
+    });
+
+    // Intersection Observer to animate album cards and descriptions
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.15
+    };
+
+    const elementsToObserve = document.querySelectorAll('.album-container, section.description');
+
+    const observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    elementsToObserve.forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>
